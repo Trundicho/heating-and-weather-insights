@@ -6,8 +6,8 @@ import numpy as np
 import pandas as pd
 
 below_degrees = 14
-
-heating_consumption_data = './data/gas.csv'
+energy_source = 'Gas'
+heating_consumption_data = './data/heat_consumption_data.csv'
 weather_data_file_template = './data/weather_data_{}.json'
 heating_consumption_unit = ['kWh', 5500, 500]
 # gas_consumption_unit = ['Liter', 1000, 100]
@@ -16,7 +16,7 @@ heating_consumption_unit = ['kWh', 5500, 500]
 temperature_bin_size = 4
 
 # Load the gas tank data
-gas_tank_df = pd.read_csv(heating_consumption_data, parse_dates=['Date'], dayfirst=True)
+tank_df = pd.read_csv(heating_consumption_data, parse_dates=['Date'], dayfirst=True)
 
 years = [
     2017,
@@ -50,73 +50,74 @@ for year in years:
     colors.append(available_colors[row])
 
     if 2017 == year_of_interest:
-        all_dates_gas_filter = pd.date_range(start='2017-06-22', end='2018-04-02')
+        all_dates_filter = pd.date_range(start='2017-06-22', end='2018-04-02')
     if 2018 == year_of_interest:
-        all_dates_gas_filter = pd.date_range(start='2018-04-03', end='2019-05-24')
+        all_dates_filter = pd.date_range(start='2018-04-03', end='2019-05-24')
     if 2019 == year_of_interest:
-        all_dates_gas_filter = pd.date_range(start='2019-05-25', end='2020-07-02')
+        all_dates_filter = pd.date_range(start='2019-05-25', end='2020-07-02')
     if 2020 == year_of_interest:
-        all_dates_gas_filter = pd.date_range(start='2020-06-01', end='2021-07-04')
+        all_dates_filter = pd.date_range(start='2020-06-01', end='2021-07-04')
     if 2021 == year_of_interest:
-        all_dates_gas_filter = pd.date_range(start='2021-07-05', end='2022-05-25')
+        all_dates_filter = pd.date_range(start='2021-07-05', end='2022-05-25')
     if 2022 == year_of_interest:
-        all_dates_gas_filter = pd.date_range(start='2022-06-01', end='2023-07-01')
+        all_dates_filter = pd.date_range(start='2022-06-01', end='2023-07-01')
     if 2023 == year_of_interest:
-        all_dates_gas_filter = pd.date_range(start='2023-07-01', end='2024-04-28')
+        all_dates_filter = pd.date_range(start='2023-07-01', end='2024-04-28')
     if 2024 == year_of_interest:
-        all_dates_gas_filter = pd.date_range(start='2024-04-29', end='2024-04-30')
+        all_dates_filter = pd.date_range(start='2024-04-29', end='2024-04-30')
 
-    gas_tank_year = gas_tank_df.copy()
-    gas_tank_year.set_index('Date', inplace=True)
-    gas_tank_year = gas_tank_year.reindex(all_dates_gas_filter)
+    tank_year = tank_df.copy()
+    tank_year.set_index('Date', inplace=True)
+    tank_year = tank_year.reindex(all_dates_filter)
 
     # Forward fill the missing values
-    gas_tank_year.interpolate(method='pchip', inplace=True)
+    tank_year.interpolate(method='pchip', inplace=True)
 
     # Reset the index
-    gas_tank_year.reset_index(inplace=True)
-    gas_tank_year.rename(columns={'index': 'Date'}, inplace=True)
+    tank_year.reset_index(inplace=True)
+    tank_year.rename(columns={'index': 'Date'}, inplace=True)
 
     weather_df['min_temperature'] = weather_df['temperature'].apply(lambda x: x['min'])
     weather_df['max_temperature'] = weather_df['temperature'].apply(lambda x: x['max'])
     weather_df['avg_temperature'] = (weather_df['min_temperature'] + weather_df['max_temperature']) / 2
 
-    merged_df = pd.merge(gas_tank_year, weather_df, left_on='Date', right_on='date', how='outer')
+    merged_df = pd.merge(tank_year, weather_df, left_on='Date', right_on='date', how='outer')
 
     merged_df = merged_df[
         (merged_df['Date'].dt.year >= years[0]) & (merged_df['Date'].dt.year <= years[years.__len__() - 1] + 1)]
 
     # Berechnen Sie den gesamten Gasverbrauch für das Jahr
-    merged_df['Gas Consumption in %'] = -merged_df['Gas tank in %'].diff()
-    total_gas_consumption = merged_df['Gas Consumption in %'].sum()
+    merged_df['{} Consumption in %'.format(energy_source)] = -merged_df['Tank level in %'].diff()
+    total_energy_consumption = merged_df['{} Consumption in %'.format(energy_source)].sum()
 
     # 100% = 1560L volle Tankfüllung von 0 auf 100%
     # 47% = 47 * 1560 / 100 L
     # Ein Liter (l) Flüssiggas enthält ca. 7.13 Kilowattstunden (kWh) Brennwert Energie.
     # https://fluessiggas.de/wissen/fluessiggas/fluessiggas-umrechnung/#fluessiggas-rechner
     if heating_consumption_unit[0] == 'kWh':
-        total_gas_consumption = total_gas_consumption * 15.6 * 7.13
+        total_energy_consumption = total_energy_consumption * 15.6 * 7.13
     if heating_consumption_unit[0] == 'Liter':
-        total_gas_consumption = total_gas_consumption * 15.6
+        total_energy_consumption = total_energy_consumption * 15.6
 
     merged_df['below_degrees'] = below_degrees - merged_df[merged_df['avg_temperature']
                                                            < below_degrees]['avg_temperature']
     sum_below_degrees = merged_df['below_degrees'].sum()
     print(sum_below_degrees)
-    gasPerWinter = 0
+    energyPerWinter = 0
     if sum_below_degrees > 0:
-        gasPerWinter = round(total_gas_consumption / sum_below_degrees, 2)
-    label = '{}/{}\n{}'.format(year, year + 1, round(gasPerWinter, 2))
-    ax[0].bar(label, total_gas_consumption, color=colors[row], alpha=0.6)
+        energyPerWinter = round(total_energy_consumption / sum_below_degrees, 2)
+    label = '{}/{}\n{}'.format(year, year + 1, round(energyPerWinter, 2))
+    ax[0].bar(label, total_energy_consumption, color=colors[row], alpha=0.6)
     ax[0].bar(label, sum_below_degrees, color='blue', alpha=0.6)
 
 weather_df.set_index('date', inplace=True)
 monthly_avg_temperatures = weather_df['avg_temperature'].resample('ME').mean()
 
-ax[0].set_xlabel('Heizperiode und Verbrauch / Summe Grade unter {}° (kleiner desto besser)'.format(below_degrees))
-ax[0].set_ylabel('Summe Grade unter {}°\nGesamt Gasverbrauch ({})'.format(below_degrees,
-                                                                          heating_consumption_unit[0]))
-ax[0].set_title('Gesamt Gasverbrauch pro Jahr')
+ax[0].set_xlabel('Heating period and consumption / Sum of degrees under {}° (the lower the better)'.format(
+    below_degrees))
+ax[0].set_ylabel('Sum of degrees under {}°\nTotal consumption ({})'.format(below_degrees,
+                                                                           heating_consumption_unit[0]))
+ax[0].set_title('Total {} consumption per year'.format(energy_source))
 ax[0].set_yticks(np.arange(0, heating_consumption_unit[1], heating_consumption_unit[2]))
 ax[0].grid(True, axis='y')
 ax[0].legend()
@@ -125,9 +126,9 @@ ax[1].plot(monthly_avg_temperatures.index, monthly_avg_temperatures.values)
 # ax[1].plot(weather_df['avg_temperature'].index, weather_df['avg_temperature'].values)
 ax[1].set_xlim([mdates.date2num(pd.Timestamp('{}-07-01'.format(years[0]))),
                 mdates.date2num(pd.Timestamp('{}-08-30'.format(years[years.__len__() - 1] + 1)))])
-ax[1].set_title('Monatliche Durchschnittstemperaturen')
-ax[1].set_xlabel('Monat')
-ax[1].set_ylabel('Durchschnittstemperatur')
+ax[1].set_title('Monthly average temperatures')
+ax[1].set_xlabel('Month')
+ax[1].set_ylabel('Average temperature')
 ax[1].set_yticks(np.arange(0, 30, 5))
 ax[1].grid(True, axis='y')
 
