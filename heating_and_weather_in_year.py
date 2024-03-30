@@ -109,7 +109,7 @@ bins = np.arange(merged_df['avg_temperature'].min(), merged_df['avg_temperature'
 merged_df['Temperature Bin'] = pd.cut(merged_df['avg_temperature'], bins)
 
 ax[1].set_xlabel('Temperature range')
-ax[1].set_ylabel('Daily consumption')
+ax[1].set_ylabel('Daily consumption in %')
 ax[1].set_title(str(year_of_interest))
 ax[1].grid(True, axis='y')
 sns.boxplot(x='Temperature Bin', y='{} consumption in %'.format(energy_source), data=merged_df)

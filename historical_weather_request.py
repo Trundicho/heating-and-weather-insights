@@ -7,7 +7,7 @@ weather_data_file_template = './data/weather_data_{}.json'
 
 # OpenWeatherMap API endpoint
 api_url = "https://api.openweathermap.org/data/3.0/onecall/day_summary"
-api_key = "Replace with your OpenWeatherMap API key"
+api_key = "d14645e9effd825a1f72dc191a3dd253"
 
 # Location coordinates
 lat = 48.67357
