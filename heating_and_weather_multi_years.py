@@ -11,6 +11,7 @@ max_tank_liters = 1560
 minimum_tank_level_percent = 25
 maximum_tank_level_percent = 85
 
+# unit, maximum y-display-value, y-display-ticks
 heating_consumption_unit = ['kWh', 5500, 500]
 # heating_consumption_unit = ['Liter', 1000, 100]
 # heating_consumption_unit = ['%', 60, 5]
@@ -119,10 +120,9 @@ for year in years:
                                                 energy_source,
                                                 max_tank_liters)
 
-    merged_df['below_degrees'] = below_degrees - merged_df[merged_df['avg_temperature']
-                                                           < below_degrees]['avg_temperature']
+    merged_df['below_degrees'] = below_degrees - merged_df[merged_df['avg_temperature'] < below_degrees][
+        'avg_temperature']
     sum_below_degrees = merged_df['below_degrees'].sum()
-    print(sum_below_degrees)
     energyPerWinter = 0
     if sum_below_degrees > 0:
         energyPerWinter = round(total_energy_consumption / sum_below_degrees, 2)
