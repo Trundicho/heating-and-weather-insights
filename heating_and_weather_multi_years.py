@@ -143,7 +143,7 @@ ax[0].grid(True, axis='y')
 ax[0].legend()
 
 ax[1].plot(monthly_avg_temperatures.index, monthly_avg_temperatures.values)
-# ax[1].plot(weather_df['avg_temperature'].index, weather_df['avg_temperature'].values)
+
 ax[1].set_xlim([mdates.date2num(pd.Timestamp('{}-07-01'.format(years[0]))),
                 mdates.date2num(pd.Timestamp('{}-08-30'.format(years[years.__len__() - 1] + 1)))])
 ax[1].set_title('Monthly average temperatures')

@@ -7,14 +7,14 @@ weather_data_file_template = './data/weather_data_{}.json'
 
 # OpenWeatherMap API endpoint
 api_url = "https://api.openweathermap.org/data/3.0/onecall/day_summary"
-api_key = "d14645e9effd825a1f72dc191a3dd253"
+api_key = "<bring_your_own_key>"
 
 # Location coordinates
 lat = 48.67357
 lon = 7.94265
 
-start_date = datetime(2016, 4, 28)
-end_date = datetime(2016, 4, 30)
+start_date = datetime(2024, 5, 1)
+end_date = datetime(2024, 5, 31)
 
 
 def add_or_replace_data_element_to_file(file_path, data_element):
