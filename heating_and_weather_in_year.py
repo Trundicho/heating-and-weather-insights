@@ -20,16 +20,12 @@ weather_data_file_template = './data/weather_data_{}.json'
 temperature_bin_size = 4
 weather_data = []
 temps = []
-years = [
-    2017,
-    2018,
-    2019,
-    2020,
-    2021,
-    2022,
-    2023,
-    2024
-]
+
+with open("data/heat_period_config.json", "r") as f:
+    date_ranges = json.load(f)
+
+years = list(date_ranges.keys())
+
 fig, ax = plt.subplots(2, 1, figsize=(10, 10))
 for year in years:
     temps.append(0)
@@ -40,22 +36,8 @@ weather_df = pd.DataFrame(weather_data)
 weather_df['date'] = pd.to_datetime(weather_df['date'])
 tank_df = pd.read_csv(heating_consumption_data, parse_dates=['Date'], dayfirst=True)
 
-if 2017 == year_of_interest:
-    all_dates_filter = pd.date_range(start='2017-06-22', end='2018-04-02')
-if 2018 == year_of_interest:
-    all_dates_filter = pd.date_range(start='2018-04-03', end='2019-05-24')
-if 2019 == year_of_interest:
-    all_dates_filter = pd.date_range(start='2019-05-25', end='2020-07-02')
-if 2020 == year_of_interest:
-    all_dates_filter = pd.date_range(start='2020-06-01', end='2021-07-04')
-if 2021 == year_of_interest:
-    all_dates_filter = pd.date_range(start='2021-07-05', end='2022-05-25')
-if 2022 == year_of_interest:
-    all_dates_filter = pd.date_range(start='2022-06-01', end='2023-07-01')
-if 2023 == year_of_interest:
-    all_dates_filter = pd.date_range(start='2023-07-01', end='2024-03-15')
-if 2024 == year_of_interest:
-    all_dates_filter = pd.date_range(start='2024-03-16', end='2024-03-31')
+date_range_of_interest = date_ranges[str(year_of_interest)]
+all_dates_filter = pd.date_range(date_range_of_interest["start"], date_range_of_interest["end"])
 
 tank_year = tank_df.copy()
 tank_year.set_index('Date', inplace=True)
