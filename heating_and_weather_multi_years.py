@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-below_degrees = 14
+below_degrees = 15
 energy_source = 'Gas'
 max_tank_liters = 1560
 minimum_tank_level_percent = 25
@@ -16,6 +16,17 @@ heating_consumption_unit = ['kWh', 5500, 500]
 # heating_consumption_unit = ['Liter', 1000, 100]
 # heating_consumption_unit = ['%', 60, 5]
 
+date_ranges = {
+    2017: pd.date_range(start='2017-06-22', end='2018-04-02'),
+    2018: pd.date_range(start='2018-04-03', end='2019-05-24'),
+    2019: pd.date_range(start='2019-05-25', end='2020-07-02'),
+    2020: pd.date_range(start='2020-06-01', end='2021-07-04'),
+    2021: pd.date_range(start='2021-07-05', end='2022-05-25'),
+    2022: pd.date_range(start='2022-06-01', end='2023-07-01'),
+    2023: pd.date_range(start='2023-07-01', end='2024-04-28'),
+    2024: pd.date_range(start='2024-04-29', end='2024-04-30')
+}
+
 heating_consumption_data = './data/heat_consumption_data.csv'
 weather_data_file_template = './data/weather_data_{}.json'
 
@@ -25,23 +36,15 @@ tank_df = pd.read_csv(heating_consumption_data, parse_dates=['Date'], dayfirst=T
 tank_df['Tank level in %'] = (tank_df['Tank level in %']
                               .apply(lambda x: ((x - minimum_tank_level_percent) /
                                                 (maximum_tank_level_percent - minimum_tank_level_percent)) * 100))
-years = [
-    2017,
-    2018,
-    2019,
-    2020,
-    2021,
-    2022,
-    2023,
-    2024
-]
+
+
 available_colors = ['gray', 'red', 'green', 'blue', 'black', 'purple', 'brown', 'orange']
 colors = []
 
 fig, ax = plt.subplots(2, 1, figsize=(10, 10))
 weather_data = []
 
-for year in years:
+for year in date_ranges.keys():
     with open(weather_data_file_template.format(year), 'r') as f:
         weather_data_per_year = json.load(f)
         weather_data.extend(weather_data_per_year)
@@ -64,25 +67,6 @@ def energy_converter(energy_consumption_in_percent, heating_unit, energy_source,
     return energy_consumption_in_percent
 
 
-def filter_date_period_of_interest(year_of_interest):
-    if 2017 == year_of_interest:
-        return pd.date_range(start='2017-06-22', end='2018-04-02')
-    if 2018 == year_of_interest:
-        return pd.date_range(start='2018-04-03', end='2019-05-24')
-    if 2019 == year_of_interest:
-        return pd.date_range(start='2019-05-25', end='2020-07-02')
-    if 2020 == year_of_interest:
-        return pd.date_range(start='2020-06-01', end='2021-07-04')
-    if 2021 == year_of_interest:
-        return pd.date_range(start='2021-07-05', end='2022-05-25')
-    if 2022 == year_of_interest:
-        return pd.date_range(start='2022-06-01', end='2023-07-01')
-    if 2023 == year_of_interest:
-        return pd.date_range(start='2023-07-01', end='2024-04-28')
-    if 2024 == year_of_interest:
-        return pd.date_range(start='2024-04-29', end='2024-04-30')
-
-
 def fill_missing_values(tank_df):
     tank_year = tank_df.copy()
     tank_year.set_index('Date', inplace=True)
@@ -95,11 +79,13 @@ def fill_missing_values(tank_df):
     return tank_year
 
 
+years = list(date_ranges.keys())
+
 for year in years:
     row = row + 1
     colors.append(available_colors[row])
 
-    all_dates_filter = filter_date_period_of_interest(year)
+    all_dates_filter = date_ranges[year]
 
     tank_year = fill_missing_values(tank_df)
 
@@ -110,7 +96,9 @@ for year in years:
     merged_df = pd.merge(tank_year, weather_df, left_on='Date', right_on='date', how='outer')
 
     merged_df = merged_df[
-        (merged_df['Date'].dt.year >= years[0]) & (merged_df['Date'].dt.year <= years[years.__len__() - 1] + 1)]
+        (merged_df['Date'].dt.year >= years[0]) & (merged_df['Date'].dt.year <= years[years.__len__() -
+                                                                                                   1] +
+                                                            1)]
 
     merged_df['{} Consumption in %'.format(energy_source)] = -merged_df['Tank level in %'].diff()
     total_energy_consumption = merged_df['{} Consumption in %'.format(energy_source)].sum()
