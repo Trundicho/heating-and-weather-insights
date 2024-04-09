@@ -5,14 +5,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-below_degrees = 15
+below_degrees = 16
 energy_source = 'Gas'
 max_tank_liters = 1560
 minimum_tank_level_percent = 25
 maximum_tank_level_percent = 85
 
 # unit, maximum y-display-value, y-display-ticks
-heating_consumption_unit = ['kWh', 5500, 500]
+heating_consumption_unit = ['kWh', 7000, 500]
 # heating_consumption_unit = ['Liter', 1000, 100]
 # heating_consumption_unit = ['%', 60, 5]
 
@@ -32,7 +32,6 @@ tank_df['Tank level in %'] = (tank_df['Tank level in %']
 available_colors = ['gray', 'red', 'green', 'blue', 'black', 'purple', 'brown', 'orange']
 colors = []
 
-fig, ax = plt.subplots(2, 1, figsize=(10, 10))
 weather_data = []
 
 for year in date_ranges.keys():
@@ -70,6 +69,7 @@ def fill_missing_values(tank_df, dates_filter):
     return tank_year
 
 
+fig, ax = plt.subplots(2, 1, figsize=(10, 10))
 years = [int(year) for year in date_ranges.keys()]
 
 for year in years:
