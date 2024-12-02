@@ -12,7 +12,7 @@ minimum_tank_level_percent = 25
 maximum_tank_level_percent = 85
 
 # unit, maximum y-display-value, y-display-ticks
-heating_consumption_unit = ['kWh', 7000, 500]
+heating_consumption_unit = ['kWh', 7000, 250]
 # heating_consumption_unit = ['Liter', 1000, 100]
 # heating_consumption_unit = ['%', 60, 5]
 
