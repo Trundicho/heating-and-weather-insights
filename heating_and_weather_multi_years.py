@@ -29,7 +29,7 @@ tank_df['Tank level in %'] = (tank_df['Tank level in %']
                               .apply(lambda x: ((x - minimum_tank_level_percent) /
                                                 (maximum_tank_level_percent - minimum_tank_level_percent)) * 100))
 
-available_colors = ['gray', 'red', 'green', 'blue', 'black', 'purple', 'brown', 'orange']
+available_colors = ['gray', 'red', 'green', 'blue', 'black', 'purple', 'brown', 'orange', 'yellow', 'gray']
 colors = []
 
 weather_data = []
