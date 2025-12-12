@@ -11,7 +11,8 @@ import seaborn as sns
 # year_of_interest = 2021
 # year_of_interest = 2022
 # year_of_interest = 2023
-year_of_interest = 2024
+# year_of_interest = 2024
+year_of_interest = 2025
 
 energy_source = 'Gas'
 heating_consumption_data = './data/heat_consumption_data.csv'
