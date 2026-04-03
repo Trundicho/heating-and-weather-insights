@@ -36,16 +36,27 @@ for year in years:
 weather_df = pd.DataFrame(weather_data)
 weather_df['date'] = pd.to_datetime(weather_df['date'])
 tank_df = pd.read_csv(heating_consumption_data, parse_dates=['Date'], dayfirst=True)
+latest_consumption_date = tank_df['Date'].max()
 
 date_range_of_interest = date_ranges[str(year_of_interest)]
-all_dates_filter = pd.date_range(date_range_of_interest["start"], date_range_of_interest["end"])
+start_date = pd.to_datetime(date_range_of_interest["start"])
+end_date = pd.to_datetime(date_range_of_interest["end"])
+
+if end_date > latest_consumption_date:
+    end_date = latest_consumption_date
+
+if start_date > latest_consumption_date:
+    print(f"Start date {start_date} is after the latest consumption date {latest_consumption_date}. No data to process.")
+    exit()
+
+all_dates_filter = pd.date_range(start_date, end_date)
 
 tank_year = tank_df.copy()
 tank_year.set_index('Date', inplace=True)
 tank_year = tank_year.reindex(all_dates_filter)
 
 # Forward fill the missing values
-tank_year.interpolate(method='pchip', inplace=True)
+tank_year.interpolate(method='pchip', limit_area='inside', inplace=True)
 
 # Reset the index
 tank_year.reset_index(inplace=True)

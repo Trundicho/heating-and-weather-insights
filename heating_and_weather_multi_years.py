@@ -12,19 +12,27 @@ minimum_tank_level_percent = 25
 maximum_tank_level_percent = 85
 
 # unit, maximum y-display-value, y-display-ticks
-heating_consumption_unit = ['kWh', 7000, 250]
-# heating_consumption_unit = ['Liter', 1000, 100]
+heating_consumption_unit = ['kWh', 5000, 250]
+# heating_consumption_unit = ['Liter', 700, 100]
 # heating_consumption_unit = ['%', 60, 5]
 
 with open("data/heat_period_config.json", "r") as f:
     date_ranges = json.load(f)
 
 heating_consumption_data = './data/heat_consumption_data.csv'
+electric_heat_consumption_data = './data/electric_heat_consumption_data.csv'
 weather_data_file_template = './data/weather_data_{}.json'
 
 temperature_bin_size = 4
 
 tank_df = pd.read_csv(heating_consumption_data, parse_dates=['Date'], dayfirst=True)
+latest_consumption_date = tank_df['Date'].max()
+
+try:
+    electric_df = pd.read_csv(electric_heat_consumption_data, dtype={'Date': str})
+    electric_df['Date'] = pd.to_datetime(electric_df['Date'], format='%m.%Y')
+except (FileNotFoundError, ValueError):
+    electric_df = pd.DataFrame(columns=['Date', 'kWh'])
 tank_df['Tank level in %'] = (tank_df['Tank level in %']
                               .apply(lambda x: ((x - minimum_tank_level_percent) /
                                                 (maximum_tank_level_percent - minimum_tank_level_percent)) * 100))
@@ -43,9 +51,9 @@ weather_df = pd.DataFrame(weather_data)
 weather_df['date'] = pd.to_datetime(weather_df['date'])
 
 row = - 1
+added_electric_label = False
 
-
-def energy_converter(energy_consumption_in_percent, heating_unit, energy_source, max_tank_liters):
+def energy_converter(energy_consumption_in_percent, heating_unit, max_tank_liters):
     # 100% = 1560L volle Tankfüllung von 0 auf 100%
     # 47% = 47 * 1560 / 100 L
     # Ein Liter (l) Flüssiggas enthält ca. 7.13 Kilowattstunden (kWh) Brennwert Energie.
@@ -60,9 +68,14 @@ def energy_converter(energy_consumption_in_percent, heating_unit, energy_source,
 def fill_missing_values(tank_df, dates_filter):
     tank_year = tank_df.copy()
     tank_year.set_index('Date', inplace=True)
-    tank_year = tank_year.reindex(dates_filter)
-    # Forward fill the missing values
-    tank_year.interpolate(method='pchip', inplace=True)
+    
+    all_dates = tank_year.index.union(dates_filter).sort_values().drop_duplicates()
+    tank_year = tank_year.reindex(all_dates)
+    tank_year = tank_year[~tank_year.index.duplicated(keep='first')]
+    
+    tank_year.interpolate(method='pchip', limit_area='inside', inplace=True)
+    tank_year = tank_year.loc[dates_filter]
+    
     # Reset the index
     tank_year.reset_index(inplace=True)
     tank_year.rename(columns={'index': 'Date'}, inplace=True)
@@ -72,12 +85,24 @@ def fill_missing_values(tank_df, dates_filter):
 fig, ax = plt.subplots(2, 1, figsize=(10, 10))
 years = [int(year) for year in date_ranges.keys()]
 
+labels_for_plot = []
+sum_below_degrees_for_plot = []
+
 for year in years:
     row = row + 1
     colors.append(available_colors[row])
 
     date_range_of_interest = date_ranges[str(year)]
-    all_dates_filter = pd.date_range(date_range_of_interest["start"], date_range_of_interest["end"])
+    start_date = pd.to_datetime(date_range_of_interest["start"])
+    end_date = pd.to_datetime(date_range_of_interest["end"])
+
+    if end_date > latest_consumption_date:
+        end_date = latest_consumption_date
+
+    if start_date > latest_consumption_date:
+        continue
+
+    all_dates_filter = pd.date_range(start_date, end_date)
 
     tank_year = fill_missing_values(tank_df, all_dates_filter)
 
@@ -95,7 +120,6 @@ for year in years:
 
     total_energy_consumption = energy_converter(total_energy_consumption,
                                                 heating_consumption_unit[0],
-                                                energy_source,
                                                 max_tank_liters)
 
     merged_df['below_degrees'] = below_degrees - merged_df[merged_df['avg_temperature'] < below_degrees][
@@ -105,20 +129,43 @@ for year in years:
     if sum_below_degrees > 0:
         energyPerWinter = round(total_energy_consumption / sum_below_degrees, 2)
     label = '{}/{}\n{}'.format(year, year + 1, round(energyPerWinter, 2))
-    ax[0].bar(label, total_energy_consumption, color=colors[row], alpha=0.6)
-    ax[0].bar(label, sum_below_degrees, color='blue', alpha=0.6)
+    gas_label = '{} Consumption'.format(energy_source) if row == 0 else ""
+    ax[0].bar(label, total_energy_consumption, color=colors[row], alpha=0.6, label=gas_label)
+    
+    electric_year = electric_df[(electric_df['Date'] >= start_date) & (electric_df['Date'] <= end_date)]
+    total_electric_kwh = electric_year['kWh'].sum()
+    
+    if total_electric_kwh > 0:
+        if heating_consumption_unit[0] == 'Liter':
+            total_electric_display = 0
+        elif heating_consumption_unit[0] == 'kWh':
+            total_electric_display = total_electric_kwh
+        else:
+            total_electric_display = (total_electric_kwh / 7.13) / (max_tank_liters / 100)
+            
+        electric_label = 'Electric Heat (MSZ-LN)' if not added_electric_label else ""
+        ax[0].bar(label, total_electric_display, bottom=total_energy_consumption, color='magenta', alpha=0.8, label=electric_label)
+        added_electric_label = True
+    
+    labels_for_plot.append(label)
+    sum_below_degrees_for_plot.append(sum_below_degrees)
+
+ax2 = ax[0].twinx()
+ax2.plot(labels_for_plot, sum_below_degrees_for_plot, color='blue', marker='o', linewidth=2, label='Degrees < {}°'.format(below_degrees))
+ax2.set_ylabel('Sum of degrees under {}°'.format(below_degrees), color='blue')
+ax2.tick_params(axis='y', labelcolor='blue')
+ax2.set_ylim(bottom=0)
 
 weather_df.set_index('date', inplace=True)
 monthly_avg_temperatures = weather_df['avg_temperature'].resample('ME').mean()
 
 ax[0].set_xlabel('Heating period and consumption / Sum of degrees under {}° (the lower the better)'.format(
     below_degrees))
-ax[0].set_ylabel('Sum of degrees under {}°\nTotal consumption ({})'.format(below_degrees,
-                                                                           heating_consumption_unit[0]))
+ax[0].set_ylabel('Total consumption ({})'.format(heating_consumption_unit[0]))
 ax[0].set_title('Total {} consumption per year'.format(energy_source))
 ax[0].set_yticks(np.arange(0, heating_consumption_unit[1], heating_consumption_unit[2]))
 ax[0].grid(True, axis='y')
-ax[0].legend()
+ax2.legend(loc='upper right')
 
 ax[1].plot(monthly_avg_temperatures.index, monthly_avg_temperatures.values)
 

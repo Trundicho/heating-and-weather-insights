@@ -13,9 +13,9 @@ api_key = "<bring_your_own_key>"
 lat = 48.67357
 lon = 7.94265
 
-# letztes mal am 12 Dez. 2025
-start_date = datetime(2025, 12, 4)
-end_date = datetime(2025, 12, 31)
+# letztes mal am 20 Feb. 2026
+start_date = datetime(2026, 3, 29)
+end_date = datetime(2026, 6, 30)
 
 
 def add_or_replace_data_element_to_file(file_path, data_element):
