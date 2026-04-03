@@ -94,6 +94,8 @@ ax[0].legend()
 #####################
 
 merged_df['{} consumption in %'.format(energy_source)] = -merged_df['Tank level in %'].diff()
+# Ignore increases in tank level (refills) to prevent negative consumption outliers
+merged_df.loc[merged_df['{} consumption in %'.format(energy_source)] < 0, '{} consumption in %'.format(energy_source)] = np.nan
 # merged_df['avg_temperature'] = merged_df['avg_temperature'].round() # round if you like
 
 # Define the temperature bins
